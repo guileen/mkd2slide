@@ -23,21 +23,24 @@ if(!md){
   console.log('require a markdown parser, e.g. discount, github-flavored-markdown')
 }
 
-var args = process.argv.slice(2);
-var filename = args[0];
-var text = fs.readFileSync(filename, 'utf-8');
-var title = getTitle(text);
-var body = slidefy(text);
-var output = makeStaticHtml(title, body);
-var outfile = args[1] || filename.replace(/\.[^\.]*$/, '.pdf');
-if(outfile == args[0]) {
-  console.log('output file should not same as input');
-  process.exit(1);
-}
+exports.run = function(args){
 
-var proc = spawn('wkhtmltopdf', ['--page-width', '320', '--page-height', '240', '-', outfile]);
-proc.stdin.write(output)
-proc.stdin.end();
+  var filename = args[0];
+  var text = fs.readFileSync(filename, 'utf-8');
+  var title = getTitle(text);
+  var body = slidefy(text);
+  var output = makeStaticHtml(title, body);
+  var outfile = args[1] || filename.replace(/\.[^\.]*$/, '.pdf');
+  if(outfile == args[0]) {
+    console.log('output file should not same as input');
+    process.exit(1);
+  }
+
+  var proc = spawn('wkhtmltopdf', ['--page-width', '320', '--page-height', '240', '-', outfile]);
+  proc.stdin.write(output)
+  proc.stdin.end();
+
+}
 
 function makeStaticHtml(title, body, css) {
   css = path.resolve(css || 'style.css');

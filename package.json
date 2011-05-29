@@ -1,0 +1,19 @@
+{
+  "author": "Jason Green <guileen@gmail.com>",
+  "name": "mkd2slide",
+  "description": "markdown to slide pdf",
+  "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/guileen/mkd2slide.git"
+  },
+  "main": "mkd2slide.js",
+  "engines": {
+    "node": "*"
+  },
+  "bin" : {
+    "mkd2slide" : "./bin/mkd2slide"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
