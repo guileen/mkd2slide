@@ -1,0 +1,45 @@
+*{
+  margin: 0px;
+  padding: 0px;
+}
+
+html {
+  /*
+  background-color: black;
+  color: white;
+  */
+}
+
+body {
+  font: 48px/1.4 "WenQuanYi Micro Hei", Arial, Sans;
+}
+
+.page {
+  page-break-after: always;
+  padding: 50px;
+  margin: 0px;
+}
+
+.page.last {
+  page-break-after: none;
+}
+
+.page.first {
+  text-align: center;
+}
+
+strong {
+  color: #f0f
+}
+
+#header {
+  text-align: center;
+}
+
+#header big {
+  font-size: 64px;
+}
+
+.spacer {
+  height: 200px;
+}
