@@ -151,8 +151,6 @@ function makePage(lines, clazz) {
 
 function highlight_code(html) {
   return html.replace(/\n/g, '\uffff').replace(/<code>(.*?)<\/code>/gm, function(original, source) {
-      console.log('===========');
-      console.log(source);
       return '<code>' + hl(decodeXml(source.replace(/\uffff/g, '\n'))) + '</code>';
   }).replace(/&amp;(\w+;)/g, '&$1').replace(/\uffff/g, '\n');
 }
