@@ -14,6 +14,8 @@
   "bin" : {
     "mkd2slide" : "./bin/mkd2slide"
   },
-  "dependencies": {},
+  "dependencies": {
+    "highlight" : "*"
+  },
   "devDependencies": {}
 }

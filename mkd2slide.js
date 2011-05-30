@@ -1,5 +1,7 @@
 var fs = require('fs'),
     path = require('path'),
+    sys = require('sys'),
+    hl = require('highlight').Highlight,
     spawn = require('child_process').spawn;
 
 var md;
@@ -19,28 +21,54 @@ try {
   }
 }
 
-if(!md){
-  console.log('require a markdown parser, e.g. discount, github-flavored-markdown')
+if (!md) {
+  console.log('require a markdown parser, e.g. discount, github-flavored-markdown');
 }
 
-exports.run = function(args){
+exports.run = function(args) {
 
-  var filename = args[0];
-  var text = fs.readFileSync(filename, 'utf-8');
+  var options = {};
+
+  var arg;
+  while (arg = args.shift()) {
+    switch (arg) {
+    case '--html':
+      options.html = true;
+      break;
+    default:
+      if (! options.input_filename) {
+        options.input_filename = arg;
+      } else {
+        options.output_filename = arg;
+      }
+    }
+  }
+
+  var text = fs.readFileSync(options.input_filename, 'utf-8');
   var title = getTitle(text);
   var body = slidefy(text);
-  var output = makeStaticHtml(title, body);
-  var outfile = args[1] || filename.replace(/\.[^\.]*$/, '.pdf');
-  if(outfile == args[0]) {
-    console.log('output file should not same as input');
-    process.exit(1);
+  var html = makeStaticHtml(title, body);
+  var outfile = options.output_filename || options.input_filename.replace(/\.[^\.]*$/, '.pdf');
+  if (outfile == args[0]) {
+    outfile = outfile + '.pdf';
+  }
+
+  if (options.html) {
+    fs.writeFileSync(options.input_filename.replace(/\.[^\.]*$/, '.html'), html, 'utf-8');
   }
 
   var proc = spawn('wkhtmltopdf', ['--page-width', '320', '--page-height', '240', '-', outfile]);
-  proc.stdin.write(output)
+  proc.stdin.write(html);
   proc.stdin.end();
+  proc.stderr.on('data', function(data) {
+      process.stderr.write(data);
+  });
 
-}
+  proc.stdout.on('data', function(data) {
+      process.stdout.write(data);
+  });
+
+};
 
 function makeStaticHtml(title, body, css) {
   css = path.resolve(css || 'style.css');
@@ -50,6 +78,7 @@ function makeStaticHtml(title, body, css) {
   '<head>' +
   '        <meta charset="utf-8">' +
   '        <title>' + title + '</title>' +
+  '        <link rel=stylesheet type="text/css" href="' + __dirname + '/sunburst.css">' +
   '        <link rel=stylesheet type="text/css" href="' + css + '">' +
   '</head>' +
   '<body>' +
@@ -79,7 +108,7 @@ function slidefy(text) {
     }
 
     var m;
-    if (m = /^\+\+(\.\S+)? /.exec(line)) {
+    if (m = /^\+\+(\.\S+)?\s(.*)/.exec(line)) {
       var cls = pages.length > 0 ? 'page' : 'first page';
       if (m[1]) {
         cls += m[1].replace(/\./g, ' ');
@@ -87,12 +116,12 @@ function slidefy(text) {
       pages.push(curr_page);
       curr_page = curr_page.slice();
       curr_pages.push(curr_page);
-      line = line.substring(3);
+      line = m[2];
     }
 
-    if (m = /^\-\- (.*)$/.test(line)){
-      line = line.substring(3);
-      for(var j = 0; j < curr_pages.length; j++) {
+    if (m = /^\-\- (.*)$/.test(line)) {
+      line = m[1];
+      for (var j = 0; j < curr_pages.length; j++) {
         curr_pages[j].push(line);
       }
     } else {
@@ -103,12 +132,12 @@ function slidefy(text) {
   pages.push(curr_page);
 
   var ret = '';
-  for(var i=0;i<pages.length;i++){
+  for (var i = 0; i < pages.length; i++) {
     var clz = 'page';
-    if(i == 0){
+    if (i == 0) {
       clz = 'page first';
     }
-    if(i == pages.length - 1){
+    if (i == pages.length - 1) {
       clz = 'page last';
     }
     ret += makePage(pages[i], clz);
@@ -117,6 +146,40 @@ function slidefy(text) {
 }
 
 function makePage(lines, clazz) {
-  return '\n<div class="' + clazz + '">\n' + md(lines.join('\n')) + '\n</div>\n';
+  return '\n<div class="' + clazz + '">\n' + highlight_code(md(lines.join('\n')), false, true) + '\n</div>\n';
 }
 
+function highlight_code(html) {
+  return html.replace(/\n/g, '\uffff').replace(/<code>(.*?)<\/code>/gm, function(original, source) {
+      console.log('===========');
+      console.log(source);
+      return '<code>' + hl(decodeXml(source.replace(/\uffff/g, '\n'))) + '</code>';
+  }).replace(/&amp;(\w+;)/g, '&$1').replace(/\uffff/g, '\n');
+}
+
+var xml_special_to_escaped_one_map = {
+  '&': '&amp;',
+  '"': '&quot;',
+  '<': '&lt;',
+  '>': '&gt;'
+};
+
+var escaped_one_to_xml_special_map = {
+  '&amp;': '&',
+  '&quot;': '"',
+  '&lt;': '<',
+  '&gt;': '>'
+};
+
+function encodeXml(string) {
+  return string.replace(/([\&"<>])/g, function(str, item) {
+      return xml_special_to_escaped_one_map[item];
+  });
+}
+
+function decodeXml(string) {
+  return string.replace(/(&quot;|&lt;|&gt;|&amp;)/g,
+    function(str, item) {
+      return escaped_one_to_xml_special_map[item];
+  });
+}
