@@ -11,13 +11,21 @@ html {
 }
 
 body {
-  font: 48px/1.4 "WenQuanYi Micro Hei", Arial, Sans;
+  font: 32px/1.4 "WenQuanYi Micro Hei", Arial, Sans;
+}
+
+code {
+  font-size: 24px;
 }
 
 .page {
   page-break-after: always;
-  padding: 50px;
-  margin: 0px;
+  background-color: #333;
+  color: white;
+  margin: 1px auto;
+  padding: 30px 40px;
+  width: 1024px;
+  height: 768px;
 }
 
 .page.last {
@@ -26,10 +34,23 @@ body {
 
 .page.first {
   text-align: center;
+  line-height: 2;
+}
+
+.page.first h1 {
+  margin-top: 1em;
+}
+
+.center {
+  text-align: center;
 }
 
 strong {
-  color: #f0f
+  color: #f0f;
+}
+
+li {
+  padding: .5em;
 }
 
 #header {

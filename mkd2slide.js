@@ -53,13 +53,12 @@ exports.run = function(args) {
     outfile = outfile + '.pdf';
   }
 
-  if (options.html) {
-    fs.writeFileSync(options.input_filename.replace(/\.[^\.]*$/, '.html'), html, 'utf-8');
-  }
+  var htmlfile = options.input_filename.replace(/\.[^\.]*$/, '.html');
+  fs.writeFileSync(htmlfile, html, 'utf-8');
 
-  var proc = spawn('wkhtmltopdf', ['--page-width', '320', '--page-height', '240', '-', outfile]);
-  proc.stdin.write(html);
-  proc.stdin.end();
+  var proc = spawn('wkhtmltopdf', ['-L', '0', '-R', '0', '-T', '2', '-B', '2', '--page-width', '240', '--page-height', '180', htmlfile, outfile]);
+  // proc.stdin.write(html);
+  // proc.stdin.end();
   proc.stderr.on('data', function(data) {
       process.stderr.write(data);
   });
@@ -119,7 +118,7 @@ function slidefy(text) {
       line = m[2];
     }
 
-    if (m = /^\-\- (.*)$/.test(line)) {
+    if (m = /^\-\- (.*)$/.exec(line)) {
       line = m[1];
       for (var j = 0; j < curr_pages.length; j++) {
         curr_pages[j].push(line);
