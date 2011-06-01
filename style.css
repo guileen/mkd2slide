@@ -32,12 +32,16 @@ code {
   page-break-after: none;
 }
 
-.page.first {
+.page.first,
+.page.last
+{
   text-align: center;
   line-height: 2;
 }
 
-.page.first h1 {
+.page.first h1,
+.page.last h1
+{
   margin-top: 1em;
 }
 
@@ -51,6 +55,10 @@ strong {
 
 li {
   padding: .5em;
+}
+
+li li {
+  font-size: 0.6em;
 }
 
 #header {

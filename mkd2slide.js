@@ -72,12 +72,13 @@ exports.run = function(args) {
 function makeStaticHtml(title, body, css) {
   css = path.resolve(css || 'style.css');
   css = path.existsSync(css) ? css : (__dirname + '/style.css');
+  var highlight_style = 'sunburst';
   return '<!DOCTYPE HTML>' +
   '<html>' +
   '<head>' +
   '        <meta charset="utf-8">' +
   '        <title>' + title + '</title>' +
-  '        <link rel=stylesheet type="text/css" href="' + __dirname + '/sunburst.css">' +
+  '        <link rel=stylesheet type="text/css" href="' + __dirname + '/' + highlight_style + '.css">' +
   '        <link rel=stylesheet type="text/css" href="' + css + '">' +
   '</head>' +
   '<body>' +
