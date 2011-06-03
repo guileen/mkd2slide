@@ -29,6 +29,9 @@ exports.run = function(args) {
     case '--html':
       options.html = true;
       break;
+    case '--md':
+      options.md = true;
+      break;
     default:
       if (! options.input_filename) {
         options.input_filename = arg;
@@ -40,8 +43,8 @@ exports.run = function(args) {
 
   var text = fs.readFileSync(options.input_filename, 'utf-8');
   var title = getTitle(text);
-  var body = slidefy(text);
-  var html = makeStaticHtml(title, body);
+  var results = slidefy(text);
+  var html = makeStaticHtml(title, results[0]);
   var outfile = options.output_filename || options.input_filename.replace(/\.[^\.]*$/, '.pdf');
   if (outfile == args[0]) {
     outfile = outfile + '.pdf';
@@ -49,6 +52,11 @@ exports.run = function(args) {
 
   var htmlfile = options.input_filename.replace(/\.[^\.]*$/, '.html');
   fs.writeFileSync(htmlfile, html, 'utf-8');
+
+  if(options.md){
+    var mdfile = options.input_filename.replace(/\.[^\.]*$/, '.out.md');
+    fs.writeFileSync(mdfile, results[1], 'utf-8');
+  }
 
   var proc = spawn('wkhtmltopdf', ['-L', '0', '-R', '0', '-T', '2', '-B', '2', '--page-width', '240', '--page-height', '180', htmlfile, outfile]);
   // proc.stdin.write(html);
@@ -98,13 +106,13 @@ function slidefy(text) {
   for (var i = 0; i < lines.length; i++) {
     var line = lines[i];
 
-    if (curr_page.length > 0 && (/^#+ /.test(line) || /^(-+|=+)$/.test(lines[i + 1]))) {
+    if (curr_page.length > 0 && (/^#+ /.test(line) || /^(-{3,}|=+)$/.test(lines[i + 1]))) {
       pages = pages.concat(curr_pages);
       newBasePage();
     }
 
     var m;
-    if (m = /^\+(\+|\d+)(\-(\d+)?)?\s(.*)/.exec(line)) {
+    if (m = /^\+(\+|\d+)(\-(\d+)?)?(\s(.*))?$/.exec(line)) {
       state = 'afterpend';
       from_page = m[1] == '+' ? curr_pages.length : parseInt(m[1]);
       initPage(from_page);
@@ -115,12 +123,12 @@ function slidefy(text) {
         to_page = null;
         copy_postion = curr_pages.length - 1;
       }
-      line = m[4];
-    } else if (m = /^\-(\-|\d+) (.*)$/.exec(line)) {
+      line = m[5];
+    } else if (m = /^\-(\-|\d+)(\s(.*))?$/.exec(line)) {
       state = 'prepend';
       from_page = m[1] == '-' ? curr_pages.length - 1 : parseInt(m[1]);
       initPage(from_page);
-      line = m[2];
+      line = m[3];
     }
 
     if (state == 'prepend') {
@@ -132,7 +140,7 @@ function slidefy(text) {
 
   pages = pages.concat(curr_pages);
 
-  var ret = '';
+  var htmlList = [], mdList = [];
   for (var i = 0; i < pages.length; i++) {
     var clz = 'page';
     if (i == 0) {
@@ -141,10 +149,12 @@ function slidefy(text) {
     if (i == pages.length - 1) {
       clz = 'page last';
     }
-    ret += makePage(pages[i], clz);
+    var pagemd = pages[i].join('\n');
+    mdList.push(pagemd);
+    htmlList.push(makePage(pagemd, clz));
   }
 
-  return ret;
+  return [htmlList.join('\n\n'), mdList.join('\n\n')];
 
   function newBasePage() {
       curr_page = [];
@@ -162,12 +172,14 @@ function slidefy(text) {
   }
 
   function prepend(line, num) {
-    for (var i = num || curr_pages.length - 1; i >= 0; i--) {
+    if(!line) return;
+    for (var i = num || (curr_pages.length - 1); i >= 0; i--) {
       curr_pages[i].push(line);
     }
   }
 
   function afterpend(line, from, to) {
+    if(!line) return;
     to = to || (curr_pages.length - 1);
     for (var i = from || 0; i <= to; i++) {
       curr_pages[i].push(line);
@@ -175,6 +187,6 @@ function slidefy(text) {
   }
 }
 
-function makePage(lines, clazz) {
-  return '\n<div class="' + clazz + '">\n' + hl(md(lines.join('\n')), false, true) + '\n</div>\n';
+function makePage(pagemd, clazz) {
+  return '<div class="' + clazz + '">\n' + hl(md(pagemd), false, true) + '\n</div>';
 }
