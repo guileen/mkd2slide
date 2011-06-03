@@ -14,6 +14,10 @@ body {
   font: 32px/1.4 "WenQuanYi Micro Hei", Arial, Sans;
 }
 
+pre {
+  white-space: pre-wrap;
+}
+
 code {
   font-size: 24px;
 }

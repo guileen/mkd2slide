@@ -1,18 +1,12 @@
 var fs = require('fs'),
     path = require('path'),
     sys = require('sys'),
-    hl = require('highlight').Highlight,
+    hl = require('highlighter').Highlight,
     spawn = require('child_process').spawn;
 
 var md;
 try {
-  var robotskirt = require('//robotskirt');
-  md = function(s) {
-    ret = robotskirt.toHtmlSync(s.toString());
-    console.log(s);
-    console.log(ret);
-    return ret;
-  };
+  md = require('robotskirt').toHtmlSync;
 } catch (e) {
   try {
     md = require('discount').parse;
@@ -71,15 +65,17 @@ exports.run = function(args) {
 
 function makeStaticHtml(title, body, css) {
   css = path.resolve(css || 'style.css');
-  css = path.existsSync(css) ? css : (__dirname + '/style.css');
-  var highlight_style = 'sunburst';
+  var highlight_style = 'github';
   return '<!DOCTYPE HTML>' +
   '<html>' +
   '<head>' +
   '        <meta charset="utf-8">' +
   '        <title>' + title + '</title>' +
   '        <link rel=stylesheet type="text/css" href="' + __dirname + '/' + highlight_style + '.css">' +
-  '        <link rel=stylesheet type="text/css" href="' + css + '">' +
+  '        <link rel=stylesheet type="text/css" href="' + __dirname + '/style.css">' +
+  (path.existsSync(css) ?
+    '        <link rel=stylesheet type="text/css" href="' + css + '">' :
+    '') +
   '</head>' +
   '<body>' +
   body +
@@ -97,39 +93,42 @@ function slidefy(text) {
   var pages = [];
   var curr_page = [];
   var curr_pages = [curr_page];
+  var state = 'afterpend';
+  var page_num = 0;
 
   for (var i = 0; i < lines.length; i++) {
     var line = lines[i];
 
-    if (curr_page.length > 0 && (/^##? /.test(line) || /^(-+|=+)$/.test(lines[i + 1]))) {
-      pages.push(curr_page);
+    if (curr_page.length > 0 && (/^#+ /.test(line) || /^(-+|=+)$/.test(lines[i + 1]))) {
+      pages = pages.concat(curr_pages);
       curr_page = [];
       curr_pages = [curr_page];
+      state = 'afterpend';
+      page_num = 0;
     }
 
     var m;
-    if (m = /^\+\+(\.\S+)?\s(.*)/.exec(line)) {
-      var cls = pages.length > 0 ? 'page' : 'first page';
-      if (m[1]) {
-        cls += m[1].replace(/\./g, ' ');
-      }
-      pages.push(curr_page);
-      curr_page = curr_page.slice();
-      curr_pages.push(curr_page);
+    if (m = /^\+(\+|\d+)\s(.*)/.exec(line)) {
+      state = 'afterpend';
+      page_num = m[1] == '+' ? curr_pages.length : parseInt(m[1]);
+      initPage(page_num);
+      line = m[2];
+    } else if (m = /^\-(\-|\d+) (.*)$/.exec(line)) {
+      state = 'prepend';
+      page_num = m[1] == '-' ? curr_pages.length - 1 : parseInt(m[1]);
+      initPage(page_num);
       line = m[2];
     }
 
-    if (m = /^\-\- (.*)$/.exec(line)) {
-      line = m[1];
-      for (var j = 0; j < curr_pages.length; j++) {
-        curr_pages[j].push(line);
-      }
-    } else {
-      curr_page.push(line);
+    if (state == 'prepend') {
+      prepend(line, page_num);
+    } else if (state == 'afterpend') {
+      afterpend(line, page_num);
     }
+
   }
 
-  pages.push(curr_page);
+  pages = pages.concat(curr_pages);
 
   var ret = '';
   for (var i = 0; i < pages.length; i++) {
@@ -143,41 +142,26 @@ function slidefy(text) {
     ret += makePage(pages[i], clz);
   }
   return ret;
+
+  function initPage(num) {
+    for (var i = curr_pages.length; i <= num; i++) {
+      curr_pages[i] = curr_pages[i - 1].slice();
+    }
+  }
+
+  function prepend(line, num) {
+    for (var i = num || curr_pages.length - 1; i >= 0; i--) {
+      curr_pages[i].push(line);
+    }
+  }
+
+  function afterpend(line, num) {
+    for (var i = num || 0; i < curr_pages.length; i++) {
+      curr_pages[i].push(line);
+    }
+  }
 }
 
 function makePage(lines, clazz) {
-  return '\n<div class="' + clazz + '">\n' + highlight_code(md(lines.join('\n')), false, true) + '\n</div>\n';
-}
-
-function highlight_code(html) {
-  return html.replace(/\n/g, '\uffff').replace(/<code>(.*?)<\/code>/gm, function(original, source) {
-      return '<code>' + hl(decodeXml(source.replace(/\uffff/g, '\n'))) + '</code>';
-  }).replace(/&amp;(\w+;)/g, '&$1').replace(/\uffff/g, '\n');
-}
-
-var xml_special_to_escaped_one_map = {
-  '&': '&amp;',
-  '"': '&quot;',
-  '<': '&lt;',
-  '>': '&gt;'
-};
-
-var escaped_one_to_xml_special_map = {
-  '&amp;': '&',
-  '&quot;': '"',
-  '&lt;': '<',
-  '&gt;': '>'
-};
-
-function encodeXml(string) {
-  return string.replace(/([\&"<>])/g, function(str, item) {
-      return xml_special_to_escaped_one_map[item];
-  });
-}
-
-function decodeXml(string) {
-  return string.replace(/(&quot;|&lt;|&gt;|&amp;)/g,
-    function(str, item) {
-      return escaped_one_to_xml_special_map[item];
-  });
+  return '\n<div class="' + clazz + '">\n' + hl(md(lines.join('\n')), false, true) + '\n</div>\n';
 }

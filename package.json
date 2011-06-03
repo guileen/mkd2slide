@@ -15,7 +15,8 @@
     "mkd2slide" : "./bin/mkd2slide"
   },
   "dependencies": {
-    "highlight" : "*"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "highlighter" : "*"
+  }
 }
