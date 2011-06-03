@@ -91,41 +91,43 @@ function slidefy(text) {
   text = text.replace(/\r\n/g, '\n');
   var lines = text.split('\n');
   var pages = [];
-  var curr_page = [];
-  var curr_pages = [curr_page];
-  var state = 'afterpend';
-  var page_num = 0;
+  var curr_page, curr_pages, state, copy_postion, from_page, to_page;
+
+  newBasePage();
 
   for (var i = 0; i < lines.length; i++) {
     var line = lines[i];
 
     if (curr_page.length > 0 && (/^#+ /.test(line) || /^(-+|=+)$/.test(lines[i + 1]))) {
       pages = pages.concat(curr_pages);
-      curr_page = [];
-      curr_pages = [curr_page];
-      state = 'afterpend';
-      page_num = 0;
+      newBasePage();
     }
 
     var m;
-    if (m = /^\+(\+|\d+)\s(.*)/.exec(line)) {
+    if (m = /^\+(\+|\d+)(\-(\d+)?)?\s(.*)/.exec(line)) {
       state = 'afterpend';
-      page_num = m[1] == '+' ? curr_pages.length : parseInt(m[1]);
-      initPage(page_num);
-      line = m[2];
+      from_page = m[1] == '+' ? curr_pages.length : parseInt(m[1]);
+      initPage(from_page);
+      if (m[2]) {
+        to_page = m[3] ? parseInt(m[3]) : from_page;
+        initPage(to_page);
+      } else {
+        to_page = null;
+        copy_postion = curr_pages.length - 1;
+      }
+      line = m[4];
     } else if (m = /^\-(\-|\d+) (.*)$/.exec(line)) {
       state = 'prepend';
-      page_num = m[1] == '-' ? curr_pages.length - 1 : parseInt(m[1]);
-      initPage(page_num);
+      from_page = m[1] == '-' ? curr_pages.length - 1 : parseInt(m[1]);
+      initPage(from_page);
       line = m[2];
     }
 
     if (state == 'prepend') {
-      prepend(line, page_num);
+      prepend(line, from_page);
     } else if (state == 'afterpend') {
-      afterpend(line, page_num);
+      afterpend(line, from_page, to_page);
     }
-
   }
 
   pages = pages.concat(curr_pages);
@@ -141,11 +143,21 @@ function slidefy(text) {
     }
     ret += makePage(pages[i], clz);
   }
+
   return ret;
+
+  function newBasePage() {
+      curr_page = [];
+      curr_pages = [curr_page];
+      state = 'afterpend';
+      from_page = 0;
+      to_page = null;
+      copy_postion = 0;
+  }
 
   function initPage(num) {
     for (var i = curr_pages.length; i <= num; i++) {
-      curr_pages[i] = curr_pages[i - 1].slice();
+      curr_pages[i] = curr_pages[copy_postion].slice();
     }
   }
 
@@ -155,8 +167,9 @@ function slidefy(text) {
     }
   }
 
-  function afterpend(line, num) {
-    for (var i = num || 0; i < curr_pages.length; i++) {
+  function afterpend(line, from, to) {
+    to = to || (curr_pages.length - 1);
+    for (var i = from || 0; i <= to; i++) {
       curr_pages[i].push(line);
     }
   }
