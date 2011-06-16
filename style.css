@@ -22,6 +22,32 @@ code {
   font-size: 24px;
 }
 
+strong {
+  color: #f0f;
+}
+
+big {
+  font-size: 3em;
+}
+
+li {
+  padding: .5em;
+}
+
+li li {
+  font-size: 0.6em;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: #ddd;
+  border-bottom: 1px solid #ccc;
+  margin-bottom: 0.5em;
+}
+
+.spacer {
+  height: 200px;
+}
+
 .page {
   page-break-after: always;
   background-color: #333;
@@ -46,23 +72,13 @@ code {
 .page.first h1,
 .page.last h1
 {
-  margin-top: 1em;
+  margin: 1em 0 0 0;
+  color: white;
+  border: none;
 }
 
 .center {
   text-align: center;
-}
-
-strong {
-  color: #f0f;
-}
-
-li {
-  padding: .5em;
-}
-
-li li {
-  font-size: 0.6em;
 }
 
 #header {
@@ -73,6 +89,3 @@ li li {
   font-size: 64px;
 }
 
-.spacer {
-  height: 200px;
-}

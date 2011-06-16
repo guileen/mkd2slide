@@ -6,7 +6,7 @@ var fs = require('fs'),
 
 var md;
 try {
-  md = require('robotskirt').toHtmlSync;
+  md = require('//robotskirt').toHtmlSync;
 } catch (e) {
   try {
     md = require('discount').parse;
@@ -131,6 +131,8 @@ function slidefy(text) {
       line = m[3];
     }
 
+    if (line === undefined) continue;
+
     if (state == 'prepend') {
       prepend(line, from_page);
     } else if (state == 'afterpend') {
@@ -172,14 +174,12 @@ function slidefy(text) {
   }
 
   function prepend(line, num) {
-    if(!line) return;
     for (var i = num || (curr_pages.length - 1); i >= 0; i--) {
       curr_pages[i].push(line);
     }
   }
 
   function afterpend(line, from, to) {
-    if(!line) return;
     to = to || (curr_pages.length - 1);
     for (var i = from || 0; i <= to; i++) {
       curr_pages[i].push(line);
